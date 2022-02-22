@@ -1,14 +1,14 @@
-use stm32f1xx_hal::gpio::{Input, PullUp, Pxx};
+use stm32f0xx_hal::gpio::{Input, Pin, PullUp};
 use switch_hal::{ActiveLow, InputSwitch, Switch};
 
 pub struct StatefulKey {
     pub key: u8,
     is_pressed: bool,
-    pin: Switch<Pxx<Input<PullUp>>, ActiveLow>,
+    pin: Switch<Pin<Input<PullUp>>, ActiveLow>,
 }
 
 impl StatefulKey {
-    pub fn new(pin: Switch<Pxx<Input<PullUp>>, ActiveLow>, key: u8) -> StatefulKey {
+    pub fn new(pin: Switch<Pin<Input<PullUp>>, ActiveLow>, key: u8) -> StatefulKey {
         StatefulKey {
             key,
             is_pressed: false,

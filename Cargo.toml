@@ -18,6 +18,6 @@ switch-hal = "^0.4.0"
 usb-device = "^0.2.8"
 usbd-hid = "^0.5.2"
 
-[dependencies.stm32f1xx-hal]
-features = ["stm32f103", "rt", "medium", "stm32-usbd"]
-version = "^0.6.1"
+[dependencies.stm32f0xx-hal]
+features = ["stm32f042", "rt", "stm32-usbd"]
+version = "0.18.0"

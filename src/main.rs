@@ -2,7 +2,7 @@
 #![no_main]
 
 use panic_halt as _;
-use stm32f1xx_hal as hal;
+use stm32f0xx_hal as hal;
 
 use cortex_m::{asm::delay as cycle_delay, interrupt::free};
 use cortex_m_rt::entry;
@@ -11,6 +11,7 @@ use hal::{
     delay::Delay,
     pac::{self},
     prelude::*,
+    rcc::HSEBypassMode,
     usb::{Peripheral, UsbBus},
 };
 use switch_hal::{IntoSwitch, OutputSwitch};
@@ -30,66 +31,66 @@ static mut KEY_BUFFER: [u8; 6] = [0, 0, 0, 0, 0, 0];
 #[entry]
 fn main() -> ! {
     /* Get access to device and core peripherals */
-    let dp = pac::Peripherals::take().unwrap();
+    let mut dp = pac::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
 
-    /* Get access to RCC, AFIO and GPIOA */
-    let mut rcc = dp.RCC.constrain();
-    let mut flash = dp.FLASH.constrain();
+    /* remap USB pins */
+    stm32f0xx_hal::usb::remap_pins(&mut dp.RCC, &mut dp.SYSCFG);
 
     /* Set up sysclk and freeze it */
-    let clocks = rcc
-        .cfgr
-        .use_hse(8.mhz())
+    let mut clocks = dp
+        .RCC
+        .configure()
+        .hse(16.mhz(), HSEBypassMode::Bypassed)
         .sysclk(48.mhz())
-        .pclk1(24.mhz())
-        .freeze(&mut flash.acr);
-    assert!(clocks.usbclk_valid());
+        .pclk(24.mhz())
+        .freeze(&mut dp.FLASH);
 
     /* Set up systick delay */
-    let mut delay = Delay::new(cp.SYST, clocks);
+    let mut delay = Delay::new(cp.SYST, &clocks);
 
     /* Set up GPIO */
-    let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
-    let mut gpioc = dp.GPIOC.split(&mut rcc.apb2);
+    let gpioa = dp.GPIOA.split(&mut clocks);
 
     /* Set up "button" pins */
-    let btn_left = gpioa
-        .pa9
-        .into_pull_up_input(&mut gpioa.crh)
-        .downgrade()
-        .into_active_low_switch();
-
-    let btn_right = gpioa
-        .pa10
-        .into_pull_up_input(&mut gpioa.crh)
-        .downgrade()
-        .into_active_low_switch();
+    // TODO: Get correct pins
+    let (btn_left, btn_right, mut led, mut usb_dp) = cortex_m::interrupt::free(move |cs| {
+        (
+            gpioa
+                .pa9
+                .into_pull_up_input(cs)
+                .downgrade()
+                .into_active_low_switch(),
+            gpioa
+                .pa10
+                .into_pull_up_input(cs)
+                .downgrade()
+                .into_active_low_switch(),
+            gpioa.pa8.into_push_pull_output(cs).into_active_low_switch(),
+            gpioa.pa12.into_push_pull_output(cs),
+        )
+    });
 
     /* create the StatefulKeys */
     let mut key_left = StatefulKey::new(btn_left, 0x14_u8);
     let mut key_right = StatefulKey::new(btn_right, 0x08_u8);
 
     /* Set up LED pin for status */
-    let mut led = gpioc
-        .pc13
-        .into_push_pull_output(&mut gpioc.crh)
-        .into_active_low_switch();
     led.off().ok();
 
     // BluePill board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
     // will not reset your device when you upload new firmware.
-    let mut usb_dp = gpioa.pa12.into_push_pull_output(&mut gpioa.crh);
     usb_dp.set_low().ok();
     cycle_delay(100); // >1 us, I think
+    let usb_dp_input = cortex_m::interrupt::free(move |cs| usb_dp.into_floating_input(cs));
 
     // now fire up the USB BUS
     let usb = Peripheral {
         usb: dp.USB,
         pin_dm: gpioa.pa11,
-        pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
+        pin_dp: usb_dp_input,
     };
 
     let usb_alloc = unsafe {
