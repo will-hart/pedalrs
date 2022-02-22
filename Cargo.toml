@@ -1,0 +1,20 @@
+[package]
+name = "pedalrs"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+opt-level = 'z' # maximum optimisations
+lto = true      # link-time-optimisations for further size reduction
+
+[dependencies]
+cortex-m = "^0.6.3"
+cortex-m-rt = "^0.6.12"
+embedded-hal = "^0.2.4"
+panic-halt = "^0.2.0"
+nb = "^0.1.2"
+switch-hal = "0.4.0"
+
+[dependencies.stm32f1xx-hal]
+features = ["stm32f103", "rt", "medium"]
+version = "^0.6.1"
