@@ -2,6 +2,7 @@ use stm32f0xx_hal::usb::{Peripheral, UsbBus};
 use usb_device::{
     class_prelude::UsbBusAllocator,
     device::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
+    UsbError,
 };
 use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
@@ -23,7 +24,8 @@ impl<'a> UsbInterface<'a> {
     pub fn new(alloc: &'a UsbBusAllocator<UsbBus<Peripheral>>) -> UsbInterface<'a> {
         let hid = HIDClass::new(&alloc, KeyboardReport::desc(), 63);
 
-        let bus = UsbDeviceBuilder::new(&alloc, UsbVidPid(0x16c0, 0x27dd))
+        // TODO: this is a test code from pid.codes, change before release
+        let bus = UsbDeviceBuilder::new(&alloc, UsbVidPid(0x1209, 0x0001))
             .manufacturer("Atto Zepto")
             .product("Pedalrs")
             .serial_number("000001")
@@ -43,6 +45,15 @@ impl<'a> UsbInterface<'a> {
      */
     pub fn poll(&mut self) -> bool {
         self.bus.poll(&mut [&mut self.hid])
+    }
+
+    /**
+     * Reads received data from the USB device
+     */
+    pub fn read(&mut self) -> Result<[u8; 2], UsbError> {
+        let mut buffer: [u8; 2] = [0, 0];
+        self.hid.pull_raw_output(&mut buffer).ok();
+        Ok(buffer)
     }
 
     /**

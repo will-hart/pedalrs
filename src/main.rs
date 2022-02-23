@@ -87,7 +87,14 @@ fn main() -> ! {
 
     // Main loop
     loop {
-        usb.poll();
+        if usb.poll() {
+            match usb.read() {
+                Ok(data) => {
+                    panic!("Received data on USB!! {},{}", data[0], data[1]);
+                }
+                Err(e) => panic!("Error receiving USB data {:?}", e),
+            };
+        }
 
         // update the USB
         usb.update_key(&mut key_left, 0);
