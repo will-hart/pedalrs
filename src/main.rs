@@ -90,7 +90,10 @@ fn main() -> ! {
         if usb.poll() {
             match usb.read() {
                 Ok(data) => {
-                    panic!("Received data on USB!! {},{}", data[0], data[1]);
+                    usb.set_response_bits(data[0], data[1]);
+                    usb.send_report().ok();
+                    delay.delay_ms(5u8);
+                    usb.set_response_bits(0, 0);
                 }
                 Err(e) => panic!("Error receiving USB data {:?}", e),
             };

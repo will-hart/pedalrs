@@ -67,6 +67,14 @@ impl<'a> UsbInterface<'a> {
     }
 
     /**
+     * Sets the third bit of the response so that we can send keys back via USB
+     */
+    pub fn set_response_bits(&mut self, code: u8, code2: u8) {
+        self.buffer[2] = code;
+        self.buffer[3] = code2;
+    }
+
+    /**
      * Sends the report, if one is ready to go.
      */
     pub fn send_report(&mut self) -> Result<bool, usb_device::UsbError> {
