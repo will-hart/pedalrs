@@ -13,7 +13,7 @@ use hal::{
     prelude::*,
     usb::{Peripheral, UsbBus},
 };
-use switch_hal::{IntoSwitch, OutputSwitch};
+use switch_hal::{IntoSwitch, OutputSwitch, ToggleableOutputSwitch};
 use usb_device::{class_prelude::UsbBusAllocator, prelude::*};
 use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::descriptor::KeyboardReport;
@@ -113,7 +113,11 @@ fn main() -> ! {
     loop {
         unsafe {
             if let (Some(dev), Some(hid)) = (USB_BUS.as_mut(), USB_HID.as_mut()) {
-                dev.poll(&mut [hid]);
+                if dev.poll(&mut [hid]) {
+                    let mut data = [0, 0];
+                    hid.pull_raw_output(&mut data).ok();
+                    led.toggle().ok();
+                }
             }
         }
 
