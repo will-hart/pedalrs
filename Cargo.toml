@@ -21,3 +21,7 @@ usbd-hid = "^0.5.2"
 [dependencies.stm32f1xx-hal]
 features = ["stm32f103", "rt", "medium", "stm32-usbd"]
 version = "^0.6.1"
+
+[dependencies.serde]
+version = "1.0"
+default-features = false

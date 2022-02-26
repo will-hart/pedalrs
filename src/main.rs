@@ -16,11 +16,11 @@ use hal::{
 use switch_hal::{IntoSwitch, OutputSwitch, ToggleableOutputSwitch};
 use usb_device::{class_prelude::UsbBusAllocator, prelude::*};
 use usbd_hid::descriptor::generator_prelude::*;
-use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 
 mod stateful_key;
-use crate::stateful_key::StatefulKey;
+mod usb_descriptor;
+use crate::{stateful_key::StatefulKey, usb_descriptor::CustomKeyboardReport};
 
 static mut USB_ALLOC: Option<UsbBusAllocator<UsbBus<Peripheral>>> = None;
 static mut USB_BUS: Option<UsbDevice<UsbBus<Peripheral>>> = None;
@@ -99,7 +99,7 @@ fn main() -> ! {
 
     // create a device
     unsafe {
-        USB_HID = Some(HIDClass::new(&usb_alloc, KeyboardReport::desc(), 63));
+        USB_HID = Some(HIDClass::new(&usb_alloc, CustomKeyboardReport::desc(), 15));
         USB_BUS = Some(
             UsbDeviceBuilder::new(&usb_alloc, UsbVidPid(0x16c0, 0x27dd))
                 .manufacturer("Atto Zepto")
@@ -134,9 +134,10 @@ fn main() -> ! {
 
         unsafe {
             if updating {
-                push_keyboard_report(KeyboardReport {
+                push_keyboard_report(CustomKeyboardReport {
                     keycodes: KEY_BUFFER,
-                    leds: 0,
+                    command: 0,
+                    value: 0,
                     modifier: 0,
                     reserved: 0,
                 })
@@ -149,6 +150,6 @@ fn main() -> ! {
     }
 }
 
-fn push_keyboard_report(report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
+fn push_keyboard_report(report: CustomKeyboardReport) -> Result<usize, usb_device::UsbError> {
     free(|_| unsafe { USB_HID.as_mut().map(|h| h.push_input(&report)) }).unwrap()
 }
