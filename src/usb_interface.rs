@@ -29,6 +29,7 @@ impl<'a> UsbInterface<'a> {
             .manufacturer("Atto Zepto")
             .product("Pedalrs")
             .serial_number("000001")
+            .device_release(0x0020)
             .device_class(0x03) // HID device from usb.org device classes
             .build();
 
@@ -50,8 +51,8 @@ impl<'a> UsbInterface<'a> {
     /**
      * Reads received data from the USB device
      */
-    pub fn read(&mut self) -> Result<[u8; 2], UsbError> {
-        let mut buffer: [u8; 2] = [0, 0];
+    pub fn read(&mut self) -> Result<[u8; 64], UsbError> {
+        let mut buffer: [u8; 64] = [0; 64];
         self.hid.pull_raw_output(&mut buffer).ok();
         Ok(buffer)
     }
