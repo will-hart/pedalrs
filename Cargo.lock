@@ -196,6 +196,7 @@ dependencies = [
  "embedded-hal",
  "nb 0.1.3",
  "panic-halt",
+ "serde",
  "stm32f0xx-hal",
  "switch-hal",
  "usb-device",

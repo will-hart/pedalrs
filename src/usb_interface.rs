@@ -5,10 +5,9 @@ use usb_device::{
     UsbError,
 };
 use usbd_hid::descriptor::generator_prelude::*;
-use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 
-use crate::stateful_key::StatefulKey;
+use crate::{stateful_key::StatefulKey, usb_descriptor::CustomKeyboardReport};
 
 pub struct UsbInterface<'a> {
     pub hid: HIDClass<'a, UsbBus<Peripheral>>,
@@ -22,7 +21,7 @@ impl<'a> UsbInterface<'a> {
      * Creates a new UsbInterface, configures it and returns it
      */
     pub fn new(alloc: &'a UsbBusAllocator<UsbBus<Peripheral>>) -> UsbInterface<'a> {
-        let hid = HIDClass::new(&alloc, KeyboardReport::desc(), 63);
+        let hid = HIDClass::new(&alloc, CustomKeyboardReport::desc(), 63);
 
         // TODO: this is a test code from pid.codes, change before release
         let bus = UsbDeviceBuilder::new(&alloc, UsbVidPid(0x1209, 0x0001))
@@ -81,9 +80,10 @@ impl<'a> UsbInterface<'a> {
     pub fn send_report(&mut self) -> Result<bool, usb_device::UsbError> {
         if self.dirty {
             self.dirty = false;
-            self.push_report(KeyboardReport {
+            self.push_report(CustomKeyboardReport {
                 keycodes: self.buffer,
-                leds: 0,
+                command: 0,
+                value: 0,
                 modifier: 0,
                 reserved: 0,
             })
@@ -98,7 +98,7 @@ impl<'a> UsbInterface<'a> {
     /**
      * Sends the report via HID
      */
-    fn push_report(&mut self, report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
+    fn push_report(&mut self, report: CustomKeyboardReport) -> Result<usize, usb_device::UsbError> {
         cortex_m::interrupt::free(|_| self.hid.push_input(&report))
     }
 }

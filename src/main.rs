@@ -17,6 +17,7 @@ use hal::{
 use switch_hal::IntoSwitch;
 
 mod stateful_key;
+mod usb_descriptor;
 mod usb_interface;
 use crate::stateful_key::StatefulKey;
 use crate::usb_interface::UsbInterface;
