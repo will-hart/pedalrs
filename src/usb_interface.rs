@@ -21,10 +21,10 @@ impl<'a> UsbInterface<'a> {
      * Creates a new UsbInterface, configures it and returns it
      */
     pub fn new(alloc: &'a UsbBusAllocator<UsbBus<Peripheral>>) -> UsbInterface<'a> {
-        let hid = HIDClass::new(&alloc, CustomKeyboardReport::desc(), 63);
+        let hid = HIDClass::new(&alloc, CustomKeyboardReport::desc(), 15);
 
         // TODO: this is a test code from pid.codes, change before release
-        let bus = UsbDeviceBuilder::new(&alloc, UsbVidPid(0x1209, 0x0001))
+        let bus = UsbDeviceBuilder::new(&alloc, UsbVidPid(0x16c0, 0x27dd))
             .manufacturer("Atto Zepto")
             .product("Pedalrs")
             .serial_number("000001")
@@ -67,14 +67,6 @@ impl<'a> UsbInterface<'a> {
     }
 
     /**
-     * Sets the third bit of the response so that we can send keys back via USB
-     */
-    pub fn set_response_bits(&mut self, code: u8, code2: u8) {
-        self.buffer[2] = code;
-        self.buffer[3] = code2;
-    }
-
-    /**
      * Sends the report, if one is ready to go.
      */
     pub fn send_report(&mut self) -> Result<bool, usb_device::UsbError> {
@@ -82,8 +74,7 @@ impl<'a> UsbInterface<'a> {
             self.dirty = false;
             self.push_report(CustomKeyboardReport {
                 keycodes: self.buffer,
-                command: 0,
-                value: 0,
+                leds: 0,
                 modifier: 0,
                 reserved: 0,
             })
