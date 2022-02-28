@@ -57,7 +57,7 @@ impl<'a> UsbInterface<'a> {
     /**
      * Reads received data from the USB device
      */
-    pub fn read(&mut self) -> Result<([u8; 64], usize), UsbError> {
+    pub fn read_command(&mut self) -> Result<([u8; 64], usize), UsbError> {
         let mut buffer: [u8; 64] = [0; 64];
         match self.hid.pull_raw_output(&mut buffer) {
             Ok(size) => Ok((buffer, size)),
@@ -75,7 +75,8 @@ impl<'a> UsbInterface<'a> {
     pub fn update_key(&mut self, key: &mut StatefulKey, index: u8) {
         if let Some(updated) = key.requires_update() {
             self.dirty = true;
-            self.keyboard_report.keycodes[index as usize] = if updated { key.key } else { 0 };
+            self.keyboard_report.keycodes[index as usize] =
+                if updated { key.get_code() } else { 0 };
         }
     }
 

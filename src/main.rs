@@ -6,7 +6,7 @@ use stm32f1xx_hal as hal;
 
 use cortex_m_rt::entry;
 use hal::{prelude::*, usb::UsbBus};
-use switch_hal::ToggleableOutputSwitch;
+use switch_hal::OutputSwitch;
 
 mod configure;
 mod stateful_key;
@@ -31,10 +31,21 @@ fn main() -> ! {
     // Main loop
     loop {
         if usb.poll() {
-            match usb.read() {
-                Ok(_data) => {
+            match usb.read_command() {
+                Ok((data, _)) => {
+                    match if data[0] == 0x77 {
+                        Some(&mut key_left)
+                    } else if data[0] == 0x78 {
+                        Some(&mut key_right)
+                    } else {
+                        None
+                    } {
+                        Some(key) => key.replace_keycode(data[1]),
+                        None => {}
+                    }
+
                     if let Some(l) = config.led.as_mut() {
-                        l.toggle().ok();
+                        l.on().ok();
                     };
                 }
                 Err(e) => panic!("Error receiving USB data {:?}", e),
@@ -53,5 +64,9 @@ fn main() -> ! {
             }
             Err(e) => panic!("Error sending via USB {:?}", e),
         }
+
+        if let Some(l) = config.led.as_mut() {
+            l.off().ok();
+        };
     }
 }
