@@ -14,12 +14,14 @@ use hal::{
 };
 use switch_hal::{ActiveLow, IntoSwitch, OutputSwitch, Switch};
 
+pub type LedPin = Switch<PC13<Output<PushPull>>, ActiveLow>;
+
 pub struct GpioConfiguration {
     pub btn_left: Switch<Pxx<Input<PullUp>>, ActiveLow>,
     pub btn_right: Switch<Pxx<Input<PullUp>>, ActiveLow>,
-    pub led: Option<Switch<PC13<Output<PushPull>>, ActiveLow>>,
-    pub peripheral: Peripheral,
+    pub led: Option<LedPin>,
     pub delay: Delay,
+    pub peripheral: Peripheral,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
@@ -78,12 +80,12 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     return Some(GpioConfiguration {
         btn_left,
         btn_right,
+        led: Some(led),
+        delay,
         peripheral: Peripheral {
             usb: dp.USB,
             pin_dm: gpioa.pa11,
             pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
         },
-        led: Some(led),
-        delay,
     });
 }
