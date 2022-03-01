@@ -92,14 +92,4 @@ impl<'a> UsbInterface<'a> {
     pub fn send_report_immediate(&self, report: &CustomKeyboardReport) {
         cortex_m::interrupt::free(|_| self.hid.push_input(report)).ok();
     }
-
-    // /// Immediately sends a key
-    // pub fn send_keys(&self, key1: u8, key2: u8) {
-    //     self.send_report_immediate(&CustomKeyboardReport {
-    //         modifier: 0,
-    //         reserved: 0,
-    //         leds: 0,
-    //         keycodes: [key1, key2, 0, 0, 0, 0],
-    //     })
-    // }
 }

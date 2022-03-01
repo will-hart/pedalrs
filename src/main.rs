@@ -39,14 +39,6 @@ fn main() -> ! {
             match usb.read_command() {
                 Ok((data, num_read)) => {
                     if num_read > 0 {
-                        // usb.send_keys(0x31, num_read as u8 + 0x04);
-                        // delay.delay_ms(12u8);
-                        // usb.send_keys(0x37, data[0] + 0x04);
-                        // delay.delay_ms(12u8);
-                        // usb.send_keys(data[1] + 0x04, data[2] + 0x04);
-                        // delay.delay_ms(12u8);
-                        // usb.send_keys(0x0, 0x0);
-
                         match if data[0] == 0x19 {
                             Some(&mut key_left)
                         } else if data[0] == 0x1A {
