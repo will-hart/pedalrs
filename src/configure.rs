@@ -7,7 +7,7 @@ use cortex_m::asm::delay as cycle_delay;
 use embedded_hal::digital::v2::OutputPin;
 use hal::{
     delay::Delay,
-    gpio::{gpioc::PC13, Input, Output, Pin, PullUp, PushPull},
+    gpio::{Input, Pin, PullUp},
     pac::{self},
     prelude::*,
     rcc::HSEBypassMode,
@@ -18,9 +18,8 @@ use switch_hal::{ActiveLow, IntoSwitch, Switch};
 pub struct GpioConfiguration {
     pub btn_left: Switch<Pin<Input<PullUp>>, ActiveLow>,
     pub btn_right: Switch<Pin<Input<PullUp>>, ActiveLow>,
-    pub led: Option<Switch<PC13<Output<PushPull>>, ActiveLow>>,
-    pub peripheral: Peripheral,
     pub delay: Delay,
+    pub peripheral: Peripheral,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
@@ -81,7 +80,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
             pin_dm: usb_dm,
             pin_dp: cortex_m::interrupt::free(move |cs| usb_dp.into_floating_input(cs)),
         },
-        led: None,
         delay,
     });
 }
