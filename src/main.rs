@@ -3,6 +3,11 @@
 
 use configure::GpioConfiguration;
 use panic_halt as _;
+
+#[cfg(feature = "stm32f0")]
+use stm32f0xx_hal as hal;
+
+#[cfg(feature = "stm32f1")]
 use stm32f1xx_hal as hal;
 
 use cortex_m_rt::entry;

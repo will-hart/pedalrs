@@ -18,16 +18,21 @@ switch-hal = "^0.4.0"
 usb-device = "^0.2.8"
 usbd-hid = "^0.5.2"
 
-# uncomment this and the patch section to use the haata version of these libs
-# usbd-hid = { git = "https://github.com/haata/usbd-hid.git", branch = "master" } 
-
 [dependencies.stm32f1xx-hal]
-features = ["stm32f103", "rt", "medium", "stm32-usbd"]
+optional = true
+default-features = false
 version = "^0.6.1"
+
+[dependencies.stm32f0xx-hal]
+optional = true
+default-features = false
+version = "0.18.0"
 
 [dependencies.serde]
 version = "1.0"
 default-features = false
 
-# [patch.crates-io]
-# usb-device = { git = "https://github.com/haata/usb-device.git" }
+[features]
+default = ["stm32f1"]
+stm32f0 = ["stm32f0xx-hal/stm32f042", "stm32f0xx-hal/rt", "stm32f0xx-hal/stm32-usbd"]
+stm32f1 = ["stm32f1xx-hal/stm32f103", "stm32f1xx-hal/rt", "stm32f1xx-hal/medium", "stm32f1xx-hal/stm32-usbd"]
