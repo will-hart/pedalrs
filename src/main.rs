@@ -7,10 +7,8 @@ use stm32f1xx_hal as hal;
 
 use cortex_m_rt::entry;
 use hal::{prelude::*, usb::UsbBus};
-use switch_hal::ToggleableOutputSwitch;
 
 mod configure;
-mod led_flasher;
 mod stateful_key;
 mod usb_descriptor;
 mod usb_interface;
@@ -22,7 +20,6 @@ fn main() -> ! {
         btn_left,
         btn_right,
         peripheral,
-        mut led,
         mut delay,
     } = match configure::configure_gpio() {
         Some(config) => config,
@@ -40,22 +37,28 @@ fn main() -> ! {
     loop {
         if usb.poll() {
             match usb.read_command() {
-                Ok((data, _)) => {
-                    match if data[0] == 0x77 {
-                        Some(&mut key_left)
-                    } else if data[0] == 0x78 {
-                        Some(&mut key_right)
-                    } else {
-                        None
-                    } {
-                        Some(key) => {
-                            key.replace_keycode(data[1]);
+                Ok((data, num_read)) => {
+                    if num_read > 0 {
+                        // usb.send_keys(0x31, num_read as u8 + 0x04);
+                        // delay.delay_ms(12u8);
+                        // usb.send_keys(0x37, data[0] + 0x04);
+                        // delay.delay_ms(12u8);
+                        // usb.send_keys(data[1] + 0x04, data[2] + 0x04);
+                        // delay.delay_ms(12u8);
+                        // usb.send_keys(0x0, 0x0);
 
-                            if let Some(l) = led.as_mut() {
-                                l.toggle().ok();
-                            };
+                        match if data[0] == 0x19 {
+                            Some(&mut key_left)
+                        } else if data[0] == 0x1A {
+                            Some(&mut key_right)
+                        } else {
+                            None
+                        } {
+                            Some(key) => {
+                                key.replace_keycode(data[1]);
+                            }
+                            None => {}
                         }
-                        None => {}
                     }
                 }
                 Err(e) => panic!("Error receiving USB data {:?}", e),

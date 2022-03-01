@@ -28,14 +28,10 @@ pub struct CustomKeyboardReport {
 #[gen_hid_descriptor(
     (collection = LOGICAL, usage_page = VENDOR_DEFINED_START, usage = 0x00) = {
         (usage_page = 0xFF17, usage_min = 0x01, usage_max = 0xFF) = {
-            #[item_settings data,variable,absolute] command=output;
-        };
-        (usage_page = 0xFF17, usage_min = 0x01, usage_max = 0xFF) = {
-            #[item_settings data,variable,absolute] data=output;
+            #[item_settings data,array,absolute] command=output;
         };
     }
 )]
 pub struct CommandReport {
-    pub command: u8,
-    pub data: u8,
+    pub command: [u8; 2],
 }

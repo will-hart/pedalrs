@@ -21,9 +21,7 @@ pub struct UsbInterface<'a> {
 }
 
 impl<'a> UsbInterface<'a> {
-    /**
-     * Creates a new UsbInterface, configures it and returns it
-     */
+    /// Creates a new UsbInterface, configures it and returns it
     pub fn new(alloc: &'a UsbBusAllocator<UsbBus<Peripheral>>) -> UsbInterface<'a> {
         // Create the pedal peripheral
         let hid = HIDClass::new(&alloc, CustomKeyboardReport::desc(), 10);
@@ -51,16 +49,12 @@ impl<'a> UsbInterface<'a> {
         }
     }
 
-    /**
-     * Polls the USB device
-     */
+    /// Polls the USB device
     pub fn poll(&mut self) -> bool {
         self.bus.poll(&mut [&mut self.hid, &mut self.command])
     }
 
-    /**
-     * Reads received data from the USB device
-     */
+    /// Reads received data from the USB device
     pub fn read_command(&mut self) -> Result<([u8; 64], usize), UsbError> {
         let mut buffer: [u8; 64] = [0; 64];
         match self.command.pull_raw_output(&mut buffer) {
@@ -73,9 +67,7 @@ impl<'a> UsbInterface<'a> {
         }
     }
 
-    /**
-     * Sets the relevant pedal state in the USB buffer
-     */
+    /// Sets the relevant pedal state in the USB buffer
     pub fn update_key(&mut self, key: &mut StatefulKey, index: u8) {
         if let Some(updated) = key.requires_update() {
             self.dirty = true;
@@ -84,17 +76,30 @@ impl<'a> UsbInterface<'a> {
         }
     }
 
-    /**
-     * Sends the report, if one is ready to go.
-     */
+    /// Sends the report, if one is ready to go.
     pub fn send_report(&mut self) -> Result<bool, usb_device::UsbError> {
         if self.dirty {
             self.dirty = false;
-            cortex_m::interrupt::free(|_| self.hid.push_input(&self.keyboard_report)).ok();
+            self.send_report_immediate(&self.keyboard_report);
 
             return Ok(true);
         }
 
         Ok(false)
     }
+
+    /// Send a specific report immediately     
+    pub fn send_report_immediate(&self, report: &CustomKeyboardReport) {
+        cortex_m::interrupt::free(|_| self.hid.push_input(report)).ok();
+    }
+
+    // /// Immediately sends a key
+    // pub fn send_keys(&self, key1: u8, key2: u8) {
+    //     self.send_report_immediate(&CustomKeyboardReport {
+    //         modifier: 0,
+    //         reserved: 0,
+    //         leds: 0,
+    //         keycodes: [key1, key2, 0, 0, 0, 0],
+    //     })
+    // }
 }

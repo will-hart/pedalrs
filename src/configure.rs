@@ -7,19 +7,16 @@ use stm32f1xx_hal as hal;
 use cortex_m::asm::delay as cycle_delay;
 use hal::{
     delay::Delay,
-    gpio::{gpioc::PC13, Input, Output, PullUp, PushPull, Pxx},
+    gpio::{Input, PullUp, Pxx},
     pac::{self},
     prelude::*,
     usb::Peripheral,
 };
-use switch_hal::{ActiveLow, IntoSwitch, OutputSwitch, Switch};
-
-pub type LedPin = Switch<PC13<Output<PushPull>>, ActiveLow>;
+use switch_hal::{ActiveLow, IntoSwitch, Switch};
 
 pub struct GpioConfiguration {
     pub btn_left: Switch<Pxx<Input<PullUp>>, ActiveLow>,
     pub btn_right: Switch<Pxx<Input<PullUp>>, ActiveLow>,
-    pub led: Option<LedPin>,
     pub delay: Delay,
     pub peripheral: Peripheral,
 }
@@ -47,7 +44,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
 
     /* Set up GPIO */
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
-    let mut gpioc = dp.GPIOC.split(&mut rcc.apb2);
 
     /* Set up "button" pins */
     let btn_left = gpioa
@@ -62,13 +58,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
         .downgrade()
         .into_active_low_switch();
 
-    /* Set up LED pin for status */
-    let mut led = gpioc
-        .pc13
-        .into_push_pull_output(&mut gpioc.crh)
-        .into_active_low_switch();
-    led.off().ok();
-
     // BluePill board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
@@ -80,7 +69,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     return Some(GpioConfiguration {
         btn_left,
         btn_right,
-        led: Some(led),
         delay,
         peripheral: Peripheral {
             usb: dp.USB,
