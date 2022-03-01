@@ -31,3 +31,7 @@ default-features=false
 
 # [patch.crates-io]
 # usb-device = { git = "https://github.com/haata/usb-device.git" }
+
+[features]
+default = ["stm32f042"]
+stm32f042 = []
