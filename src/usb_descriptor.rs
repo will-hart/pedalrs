@@ -17,7 +17,6 @@ use usbd_hid::descriptor::{gen_hid_descriptor, AsInputReport, SerializedDescript
         };
     }
 )]
-#[allow(dead_code)]
 pub struct CustomKeyboardReport {
     pub modifier: u8,
     pub reserved: u8,
