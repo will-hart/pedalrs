@@ -18,6 +18,9 @@ switch-hal = "^0.4.0"
 usb-device = "^0.2.8"
 usbd-hid = "^0.5.2"
 
+eeprom24x = "0.5.0"
+bitbang-hal = "0.3.2"
+
 [dependencies.stm32f1xx-hal]
 optional = true
 default-features = false

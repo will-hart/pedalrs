@@ -14,11 +14,16 @@ use hal::{
 };
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
 
+pub type PinType<MODE> = Pxx<MODE>;
+
 pub struct GpioConfiguration {
     pub btn_left: Switch<Pxx<Input<PullUp>>, ActiveLow>,
     pub btn_right: Switch<Pxx<Input<PullUp>>, ActiveLow>,
     pub delay: Delay,
     pub peripheral: Peripheral,
+    pub scl: Pxx<Output<OpenDrain>>,
+    pub sda: Pxx<Output<OpenDrain>>,
+    pub timer: Timer<pac::TIM3>,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
@@ -42,6 +47,9 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     /* Set up systick delay */
     let delay = Delay::new(cp.SYST, clocks);
 
+    /* Set up timers for i2c */
+    let timer = Timer::tim3(pdev.TIM3, &clocks, &mut rcc.apb1).start_count_down(200.khz());
+
     /* Set up GPIO */
     let mut gpioa = dp.GPIOA.split(&mut rcc.apb2);
 
@@ -57,6 +65,9 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
         .into_pull_up_input(&mut gpioa.crh)
         .downgrade()
         .into_active_low_switch();
+
+    let scl = gpioa.pa5.into_open_drain_output(&mut gpioa.crh).downgrade();
+    let sda = gpioa.pa6.into_open_drain_output(&mut gpioa.crh).downgrade();
 
     // BluePill board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
@@ -75,5 +86,8 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
             pin_dm: gpioa.pa11,
             pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
         },
+        scl,
+        sda,
+        timer,
     });
 }

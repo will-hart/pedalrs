@@ -1,16 +1,12 @@
 #[cfg(feature = "stm32f0")]
-use stm32f0xx_hal::gpio::{Input, Pin, PullUp};
+use stm32f0xx_hal::gpio::{Input, PullUp};
 
 #[cfg(feature = "stm32f1")]
-use stm32f1xx_hal::gpio::{Input, PullUp, Pxx};
+use stm32f1xx_hal::gpio::{Input, PullUp};
 
 use switch_hal::{ActiveLow, InputSwitch, Switch};
 
-#[cfg(feature = "stm32f0")]
-pub type PinType<MODE> = Pin<MODE>;
-
-#[cfg(feature = "stm32f1")]
-pub type PinType<MODE> = Pxx<MODE>;
+use crate::configure::PinType;
 
 pub struct StatefulKey {
     key: u8,

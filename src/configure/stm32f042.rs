@@ -7,19 +7,25 @@ use cortex_m::asm::delay as cycle_delay;
 use embedded_hal::digital::v2::OutputPin;
 use hal::{
     delay::Delay,
-    gpio::{Input, Pin, PullUp},
-    pac::{self},
+    gpio::{Input, OpenDrain, Output, Pin, PullUp},
+    pac::{self, TIM3},
     prelude::*,
     rcc::HSEBypassMode,
+    timers::Timer,
     usb::Peripheral,
 };
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
+
+pub type PinType<MODE> = Pin<MODE>;
 
 pub struct GpioConfiguration {
     pub btn_left: Switch<Pin<Input<PullUp>>, ActiveLow>,
     pub btn_right: Switch<Pin<Input<PullUp>>, ActiveLow>,
     pub delay: Delay,
     pub peripheral: Peripheral,
+    pub scl: Pin<Output<OpenDrain>>,
+    pub sda: Pin<Output<OpenDrain>>,
+    pub timer: Timer<TIM3>,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
@@ -49,24 +55,29 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
 
     /* Set up "button" pins */
     // TODO: Get correct pins
-    let (btn_left, btn_right, mut usb_dp, usb_dm) = cortex_m::interrupt::free(move |cs| {
-        (
-            gpioa
-                .pa5
-                .into_pull_up_input(cs)
-                .downgrade()
-                .into_active_low_switch(),
-            gpiob
-                .pb1
-                .into_pull_up_input(cs)
-                .downgrade()
-                .into_active_low_switch(),
-            gpioa.pa12.into_push_pull_output(cs),
-            gpioa.pa11.into_floating_input(cs),
-        )
-    });
+    let (btn_left, btn_right, mut usb_dp, usb_dm, scl, sda) =
+        cortex_m::interrupt::free(move |cs| {
+            (
+                gpioa
+                    .pa5
+                    .into_pull_up_input(cs)
+                    .downgrade()
+                    .into_active_low_switch(),
+                gpiob
+                    .pb1
+                    .into_pull_up_input(cs)
+                    .downgrade()
+                    .into_active_low_switch(),
+                gpioa.pa12.into_push_pull_output(cs),
+                gpioa.pa11.into_floating_input(cs),
+                gpioa.pa7.into_open_drain_output(cs).downgrade(),
+                gpioa.pa6.into_open_drain_output(cs).downgrade(),
+            )
+        });
 
-    // BluePill board has a pull-up resistor on the D+ line.
+    let mut timer = Timer::tim3(dp.TIM3, 200.khz(), &mut clocks);
+    timer.start(200.khz());
+
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
     // will not reset your device when you upload new firmware.
@@ -76,11 +87,14 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     return Some(GpioConfiguration {
         btn_left,
         btn_right,
+        scl,
+        sda,
         peripheral: Peripheral {
             usb: dp.USB,
             pin_dm: usb_dm,
             pin_dp: cortex_m::interrupt::free(move |cs| usb_dp.into_floating_input(cs)),
         },
+        timer,
         delay,
     });
 }
