@@ -1,0 +1,9 @@
+[build]
+# Always compile for the instruction set of the STM32F1
+target = "thumbv7m-none-eabi"
+
+[target.thumbv7m-none-eabi]
+runner = 'arm-none-eabi-gdb'
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+]
