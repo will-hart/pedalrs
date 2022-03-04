@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use configure::GpioConfiguration;
+use configure::{configure_gpio, GpioConfiguration};
 use panic_halt as _;
 
 #[cfg(feature = "stm32f0")]
@@ -26,7 +26,7 @@ fn main() -> ! {
         btn_right,
         peripheral,
         mut delay,
-    } = match configure::configure_gpio() {
+    } = match configure_gpio() {
         Some(config) => config,
         None => panic!("Error configuring GPIO"),
     };

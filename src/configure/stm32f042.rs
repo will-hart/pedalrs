@@ -34,9 +34,10 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     let mut clocks = dp
         .RCC
         .configure()
-        .hse(16.mhz(), HSEBypassMode::Bypassed)
+        .hse(16.mhz(), HSEBypassMode::NotBypassed)
         .sysclk(48.mhz())
-        .pclk(24.mhz())
+        .hclk(48.mhz())
+        .pclk(48.mhz())
         .freeze(&mut dp.FLASH);
 
     /* Set up systick delay */
