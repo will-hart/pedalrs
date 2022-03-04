@@ -1,4 +1,8 @@
+#[cfg(feature = "stm32f0")]
+use stm32f0xx_hal::usb::{Peripheral, UsbBus};
+#[cfg(feature = "stm32f1")]
 use stm32f1xx_hal::usb::{Peripheral, UsbBus};
+
 use usb_device::{
     class_prelude::UsbBusAllocator,
     device::{UsbDevice, UsbDeviceBuilder, UsbVidPid},
