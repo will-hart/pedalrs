@@ -10,9 +10,10 @@ default, `stm32f0` is selected:
 cargo build --release
 ```
 
-The very first time a build is run on a fresh repo, or when changing between
-chips it is advisable to build twice as the `memory.x` and `.cargo/config` files
-don't appear to be picked up on the first run.
+> **WARNING** The very first time a build is run on a fresh repo, or when
+changing between chips it is advisable to build twice as the `memory.x` and
+`.cargo/config` files don't appear to be picked up on the first run. It may also
+be advisable to `cargo clean` between builds.
 
 To build for STM32F1 chips, run
 
