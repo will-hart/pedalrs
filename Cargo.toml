@@ -33,6 +33,6 @@ version="1"
 default-features=false
 
 [features]
-default = ["stm32f1"]
+default = ["stm32f0"]
 stm32f0 = ["stm32f0xx-hal/stm32f042", "stm32f0xx-hal/rt", "stm32f0xx-hal/stm32-usbd"]
 stm32f1 = ["stm32f1xx-hal/stm32f103", "stm32f1xx-hal/rt", "stm32f1xx-hal/medium", "stm32f1xx-hal/stm32-usbd"]

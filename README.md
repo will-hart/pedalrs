@@ -2,8 +2,22 @@
 
 ## Building
 
+`memory.x` and `.cargo/config` files are automatically copied over based on the
+microcontroller being used. Select the microcontroller by using `features`. By
+default, `stm32f0` is selected:
+
 ```shell
 cargo build --release
+```
+
+The very first time a build is run on a fresh repo, or when changing between
+chips it is advisable to build twice as the `memory.x` and `.cargo/config` files
+don't appear to be picked up on the first run.
+
+To build for STM32F1 chips, run
+
+```shell
+cargo build --release --features stm32f1
 ```
 
 To check the built size
