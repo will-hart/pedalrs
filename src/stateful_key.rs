@@ -21,25 +21,23 @@ impl StatefulKey {
         self.key = keycode;
     }
 
-    /// Returns the key code associated with this key
-    pub fn get_code(&self) -> u8 {
-        self.key
-    }
-
     /// Updates the state of the button based on the current state (is_pressed).
-    /// Returns Some(bool) if the value has changed and requires a new USB message to be sent,
-    /// otherwise returns None
-    pub fn requires_update(&mut self) -> Option<bool> {
+    pub fn update(&mut self) {
         match self.pin.is_active() {
             Ok(currently_pressed) => {
-                if currently_pressed == self.is_pressed {
-                    None
-                } else {
-                    self.is_pressed = currently_pressed;
-                    Some(self.is_pressed)
-                }
+                self.is_pressed = currently_pressed;
             }
             Err(_) => panic!("Unable to read button"),
+        }
+    }
+
+    /// Returns the current keycode -
+    /// either self.get_code() if the key is pressed or 0 if the key isn't pressed
+    pub fn current_keycode(&self) -> u8 {
+        if self.is_pressed {
+            self.key
+        } else {
+            0
         }
     }
 }

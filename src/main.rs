@@ -62,11 +62,12 @@ fn main() -> ! {
             };
         }
 
-        // update the USB
-        usb.update_key(&mut key_left, 0);
-        usb.update_key(&mut key_right, 1);
+        // update the keys
+        key_left.update();
+        key_right.update();
 
-        match usb.send_report() {
+        // update the USB
+        match usb.send_report(key_left.current_keycode(), key_right.current_keycode()) {
             Ok(sent_data) => {
                 if sent_data {
                     delay.delay_ms(5u8);

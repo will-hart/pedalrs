@@ -11,17 +11,13 @@ use usb_device::{
 use usbd_hid::descriptor::generator_prelude::*;
 use usbd_hid::hid_class::HIDClass;
 
-use crate::{
-    stateful_key::StatefulKey,
-    usb_descriptor::{CommandReport, CustomKeyboardReport},
-};
+use crate::usb_descriptor::{CommandReport, CustomKeyboardReport};
 
 pub struct UsbInterface<'a> {
     pub hid: HIDClass<'a, UsbBus<Peripheral>>,
     command: HIDClass<'a, UsbBus<Peripheral>>,
     pub bus: UsbDevice<'a, UsbBus<Peripheral>>,
     keyboard_report: CustomKeyboardReport,
-    dirty: bool,
 }
 
 impl<'a> UsbInterface<'a> {
@@ -49,7 +45,6 @@ impl<'a> UsbInterface<'a> {
                 leds: 0,
                 keycodes: [0; 6],
             },
-            dirty: false,
         }
     }
 
@@ -71,19 +66,12 @@ impl<'a> UsbInterface<'a> {
         }
     }
 
-    /// Sets the relevant pedal state in the USB buffer
-    pub fn update_key(&mut self, key: &mut StatefulKey, index: u8) {
-        if let Some(updated) = key.requires_update() {
-            self.dirty = true;
-            self.keyboard_report.keycodes[index as usize] =
-                if updated { key.get_code() } else { 0 };
-        }
-    }
-
     /// Sends the report, if one is ready to go.
-    pub fn send_report(&mut self) -> Result<bool, usb_device::UsbError> {
-        if self.dirty {
-            self.dirty = false;
+    pub fn send_report(&mut self, key1: u8, key2: u8) -> Result<bool, usb_device::UsbError> {
+        // if either key pressed value has changed, send a report
+        if self.keyboard_report.keycodes[0] != key1 || self.keyboard_report.keycodes[1] != key2 {
+            self.keyboard_report.keycodes[0] = key1;
+            self.keyboard_report.keycodes[1] = key2;
             self.send_report_immediate(&self.keyboard_report);
 
             return Ok(true);
