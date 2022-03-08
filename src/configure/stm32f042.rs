@@ -15,9 +15,11 @@ use hal::{
 };
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
 
+pub type PinType = Pin<Input<PullUp>>;
+
 pub struct GpioConfiguration {
-    pub btn_left: Switch<Pin<Input<PullUp>>, ActiveLow>,
-    pub btn_right: Switch<Pin<Input<PullUp>>, ActiveLow>,
+    pub btn_left: Switch<PinType, ActiveLow>,
+    pub btn_right: Switch<PinType, ActiveLow>,
     pub delay: Delay,
     pub peripheral: Peripheral,
 }
