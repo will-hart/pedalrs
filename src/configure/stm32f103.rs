@@ -16,13 +16,14 @@ use hal::{
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
 
 pub type PinType = ErasedPin<Input<PullUp>>;
+pub type TimerType = CounterHz<TIM2>;
 
 pub struct GpioConfiguration {
     pub btn_left: Switch<PinType, ActiveLow>,
     pub btn_right: Switch<PinType, ActiveLow>,
     pub delay: SysDelay,
     pub peripheral: Peripheral,
-    pub timer: CounterHz<TIM2>,
+    pub timer: TimerType,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
@@ -68,8 +69,8 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     timer.listen(Event::Update);
     unsafe {
         cortex_m::interrupt::free(|_| {
-            NVIC::unmask(IRQ_TIM2);
             cp.NVIC.set_priority(IRQ_TIM2, 3); // relatively low priority
+            NVIC::unmask(IRQ_TIM2);
         });
     }
 

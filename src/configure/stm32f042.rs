@@ -18,13 +18,14 @@ use hal::{
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
 
 pub type PinType = Pin<Input<PullUp>>;
+pub type TimerType = Timer<TIM2>;
 
 pub struct GpioConfiguration {
     pub btn_left: Switch<PinType, ActiveLow>,
     pub btn_right: Switch<PinType, ActiveLow>,
     pub delay: Delay,
     pub peripheral: Peripheral,
-    pub timer: Timer<TIM2>,
+    pub timer: TimerType,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
