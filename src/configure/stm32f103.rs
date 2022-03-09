@@ -3,14 +3,14 @@
  */
 use stm32f1xx_hal as hal;
 
-use cortex_m::asm::delay as cycle_delay;
+use cortex_m::{asm::delay as cycle_delay, peripheral::NVIC};
 
 use hal::{
     gpio::{ErasedPin, Input, PullUp},
-    pac,
+    pac::{self, interrupt::TIM2 as IRQ_TIM2, TIM2},
     prelude::*,
     time::Hertz,
-    timer::SysDelay,
+    timer::{CounterHz, Event, SysDelay},
     usb::Peripheral,
 };
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
@@ -22,12 +22,13 @@ pub struct GpioConfiguration {
     pub btn_right: Switch<PinType, ActiveLow>,
     pub delay: SysDelay,
     pub peripheral: Peripheral,
+    pub timer: CounterHz<TIM2>,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
     // Get access to device and core peripherals
     let dp = pac::Peripherals::take().unwrap();
-    let cp = cortex_m::Peripherals::take().unwrap();
+    let mut cp = cortex_m::Peripherals::take().unwrap();
 
     // Get access to RCC, AFIO and GPIOA
     let rcc = dp.RCC.constrain();
@@ -61,6 +62,17 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
         .erase()
         .into_active_low_switch();
 
+    // setup the timer for periodic USB report updates
+    let mut timer = dp.TIM2.counter_hz(&clocks);
+    timer.start(Hertz::Hz(5)).ok();
+    timer.listen(Event::Update);
+    unsafe {
+        cortex_m::interrupt::free(|_| {
+            NVIC::unmask(IRQ_TIM2);
+            cp.NVIC.set_priority(IRQ_TIM2, 3); // relatively low priority
+        });
+    }
+
     // BluePill board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
@@ -78,5 +90,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
             pin_dm: gpioa.pa11,
             pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
         },
+        timer,
     });
 }

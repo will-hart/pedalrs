@@ -3,14 +3,16 @@
  */
 use stm32f0xx_hal as hal;
 
-use cortex_m::asm::delay as cycle_delay;
+use cortex_m::{asm::delay as cycle_delay, peripheral::NVIC};
 use embedded_hal::digital::v2::OutputPin;
 use hal::{
     delay::Delay,
     gpio::{Input, Pin, PullUp},
-    pac::{self},
+    pac::{self, interrupt::TIM2 as IRQ_TIM2, TIM2},
     prelude::*,
     rcc::HSEBypassMode,
+    time::Hertz,
+    timers::{Event, Timer},
     usb::Peripheral,
 };
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
@@ -22,12 +24,13 @@ pub struct GpioConfiguration {
     pub btn_right: Switch<PinType, ActiveLow>,
     pub delay: Delay,
     pub peripheral: Peripheral,
+    pub timer: Timer<TIM2>,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
     /* Get access to device and core peripherals */
     let mut dp = pac::Peripherals::take().unwrap();
-    let cp = cortex_m::Peripherals::take().unwrap();
+    let mut cp = cortex_m::Peripherals::take().unwrap();
 
     /* remap USB pins */
     stm32f0xx_hal::usb::remap_pins(&mut dp.RCC, &mut dp.SYSCFG);
@@ -51,7 +54,17 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
 
     /* Set up "button" pins */
     // TODO: Get correct pins
-    let (btn_left, btn_right, mut usb_dp, usb_dm) = cortex_m::interrupt::free(move |cs| {
+    let (btn_left, btn_right, mut usb_dp, usb_dm, timer) = cortex_m::interrupt::free(move |cs| {
+        // Set up a timer ticking at 5 Hz
+        let mut timer = Timer::tim2(dp.TIM2, Hertz(5), &mut clocks);
+        timer.start(Hertz(5));
+        timer.listen(Event::TimeOut);
+
+        unsafe {
+            NVIC::unmask(IRQ_TIM2);
+            cp.NVIC.set_priority(IRQ_TIM2, 3);
+        }
+
         (
             gpioa
                 .pa5
@@ -65,6 +78,7 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
                 .into_active_low_switch(),
             gpioa.pa12.into_push_pull_output(cs),
             gpioa.pa11.into_floating_input(cs),
+            timer,
         )
     });
 
@@ -84,5 +98,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
             pin_dp: cortex_m::interrupt::free(move |cs| usb_dp.into_floating_input(cs)),
         },
         delay,
+        timer,
     });
 }

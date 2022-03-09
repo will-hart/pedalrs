@@ -67,21 +67,24 @@ impl<'a> UsbInterface<'a> {
     }
 
     /// Sends the report, if one is ready to go.
-    pub fn send_report(&mut self, key1: u8, key2: u8) -> Result<bool, usb_device::UsbError> {
+    pub fn send_report(
+        &mut self,
+        key1: u8,
+        key2: u8,
+        force_update: bool,
+    ) -> Result<bool, usb_device::UsbError> {
         // if either key pressed value has changed, send a report
-        if self.keyboard_report.keycodes[0] != key1 || self.keyboard_report.keycodes[1] != key2 {
+        if force_update
+            || self.keyboard_report.keycodes[0] != key1
+            || self.keyboard_report.keycodes[1] != key2
+        {
             self.keyboard_report.keycodes[0] = key1;
             self.keyboard_report.keycodes[1] = key2;
-            self.send_report_immediate(&self.keyboard_report);
+            self.hid.push_input(&self.keyboard_report).ok();
 
             return Ok(true);
         }
 
         Ok(false)
-    }
-
-    /// Send a specific report immediately     
-    pub fn send_report_immediate(&self, report: &CustomKeyboardReport) {
-        cortex_m::interrupt::free(|_| self.hid.push_input(report)).ok();
     }
 }

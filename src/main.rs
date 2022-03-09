@@ -1,23 +1,27 @@
 #![no_std]
 #![no_main]
 
-use configure::{configure_gpio, GpioConfiguration};
-use panic_halt as _;
-
 #[cfg(feature = "stm32f0")]
 use stm32f0xx_hal as hal;
 
 #[cfg(feature = "stm32f1")]
 use stm32f1xx_hal as hal;
 
+use core::cell::RefCell;
+use cortex_m::interrupt::Mutex;
 use cortex_m_rt::entry;
-use hal::{prelude::*, usb::UsbBus};
+use panic_halt as _;
+
+use hal::{pac::interrupt, prelude::*, usb::UsbBus};
 
 mod configure;
 mod stateful_key;
 mod usb_descriptor;
 mod usb_interface;
 use crate::{stateful_key::StatefulKey, usb_interface::UsbInterface};
+use configure::{configure_gpio, GpioConfiguration};
+
+static FORCE_UPDATE: Mutex<RefCell<bool>> = Mutex::new(RefCell::new(false));
 
 #[entry]
 fn main() -> ! {
@@ -26,6 +30,7 @@ fn main() -> ! {
         btn_right,
         peripheral,
         mut delay,
+        timer: _,
     } = match configure_gpio() {
         Some(config) => config,
         None => panic!("Error configuring GPIO"),
@@ -66,8 +71,13 @@ fn main() -> ! {
         key_left.update();
         key_right.update();
 
-        // update the USB
-        match usb.send_report(key_left.current_keycode(), key_right.current_keycode()) {
+        // update the USB, forcing an update if the timer has ticked
+        let force_update = cortex_m::interrupt::free(|cs| FORCE_UPDATE.borrow(cs).replace(false));
+        match usb.send_report(
+            key_left.current_keycode(),
+            key_right.current_keycode(),
+            force_update,
+        ) {
             Ok(sent_data) => {
                 if sent_data {
                     delay.delay_ms(5u8);
@@ -76,4 +86,11 @@ fn main() -> ! {
             Err(e) => panic!("Error sending via USB {:?}", e),
         }
     }
+}
+
+#[interrupt]
+fn TIM2() {
+    cortex_m::interrupt::free(|cs| {
+        *FORCE_UPDATE.borrow(cs).borrow_mut() = true;
+    });
 }
