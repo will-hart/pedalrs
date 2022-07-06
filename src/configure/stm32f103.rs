@@ -52,14 +52,14 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
 
     // Set up "button" pins
     let btn_left = gpioa
-        .pa9
+        .pa8
         .into_pull_up_input(&mut gpioa.crh)
         .erase()
         .into_active_low_switch();
 
     let btn_right = gpioa
-        .pa10
-        .into_pull_up_input(&mut gpioa.crh)
+        .pa7
+        .into_pull_up_input(&mut gpioa.crl)
         .erase()
         .into_active_low_switch();
 
