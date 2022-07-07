@@ -71,6 +71,7 @@ impl<'a> UsbInterface<'a> {
         &mut self,
         key1: u8,
         key2: u8,
+        _both_for_shift: bool, // reserved for future feature
         force_update: bool,
     ) -> Result<bool, usb_device::UsbError> {
         // if either key pressed value has changed, send a report

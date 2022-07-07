@@ -88,6 +88,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "eeprom"
+version = "0.2.0"
+source = "git+https://github.com/will-hart/eeprom?branch=hal-0.9.0#945525685fd398acbbd2af0a570df98a08044f9b"
+dependencies = [
+ "stm32f1xx-hal",
+]
+
+[[package]]
 name = "embedded-dma"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -173,6 +181,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
+ "eeprom",
  "embedded-hal",
  "nb 1.0.0",
  "panic-halt",
@@ -369,9 +378,9 @@ checksum = "6be90410d4772074ea49525e2e753b65920b94b57eee21a6ef7b6a6fe6296245"
 
 [[package]]
 name = "usbd-hid"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "183b7e65bbd75512aedf250deda89394c74ae3118b79fe41f159e8503e1d5d7f"
+checksum = "28ab3359cb8ad713361abb84030f120d7350488d75949ad4bb39f53a1a8321dd"
 dependencies = [
  "serde",
  "ssmarshal",

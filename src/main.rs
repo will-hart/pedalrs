@@ -14,15 +14,21 @@ use panic_halt as _;
 
 use hal::{pac::interrupt, prelude::*, usb::UsbBus};
 
+use crate::{stateful_key::StatefulKey, usb_interface::UsbInterface};
+use configure::{configure_gpio, Configuration, GpioConfiguration, TimerType};
+
 mod configure;
 mod stateful_key;
 mod usb_descriptor;
 mod usb_interface;
-use crate::{stateful_key::StatefulKey, usb_interface::UsbInterface};
-use configure::{configure_gpio, GpioConfiguration, TimerType};
 
 static FORCE_UPDATE: Mutex<RefCell<bool>> = Mutex::new(RefCell::new(false));
 static TIMER: Mutex<RefCell<Option<TimerType>>> = Mutex::new(RefCell::new(None));
+
+const UPDATE_LEFT_KEY_COMMAND: u8 = 0x19u8;
+const UPDATE_RIGHT_KEY_COMMAND: u8 = 0x1Au8;
+const UPDATE_SHIFT_KEY_SETTING_COMMAND: u8 = 0x1Bu8;
+const RESET_CONFIG_COMMNAD: u8 = 0x1Cu8;
 
 #[entry]
 fn main() -> ! {
@@ -32,6 +38,9 @@ fn main() -> ! {
         peripheral,
         mut delay,
         timer,
+
+        #[cfg(feature = "stm32f1")]
+        mut flash,
     } = match configure_gpio() {
         Some(config) => config,
         None => panic!("Error configuring GPIO"),
@@ -41,9 +50,15 @@ fn main() -> ! {
         TIMER.borrow(cs).replace(Some(timer));
     });
 
+    /* Load configuration */
+    #[cfg(feature = "stm32f1")]
+    let mut config = Configuration::read(&mut flash);
+    #[cfg(feature = "stm32f0")]
+    let mut config = Configuration::default();
+
     /* create the StatefulKeys */
-    let mut key_left = StatefulKey::new(btn_left, 0x14_u8);
-    let mut key_right = StatefulKey::new(btn_right, 0x08_u8);
+    let mut key_left = StatefulKey::new(btn_left, config.left_key);
+    let mut key_right = StatefulKey::new(btn_right, config.right_key);
 
     let alloc = UsbBus::new(peripheral);
     let mut usb = UsbInterface::new(&alloc);
@@ -54,18 +69,29 @@ fn main() -> ! {
             match usb.read_command() {
                 Ok((data, num_read)) => {
                     if num_read > 0 {
-                        match if data[0] == 0x19 {
-                            Some(&mut key_left)
-                        } else if data[0] == 0x1A {
-                            Some(&mut key_right)
-                        } else {
-                            None
-                        } {
-                            Some(key) => {
-                                key.replace_keycode(data[1]);
+                        match data[0] {
+                            UPDATE_LEFT_KEY_COMMAND => {
+                                config.left_key = data[1];
                             }
-                            None => {}
+                            UPDATE_RIGHT_KEY_COMMAND => {
+                                config.right_key = data[1];
+                            }
+                            UPDATE_SHIFT_KEY_SETTING_COMMAND => {
+                                config.both_for_shift = data[1] > 0;
+                            }
+                            RESET_CONFIG_COMMNAD => {
+                                config.left_key = 0x14u8;
+                                config.right_key = 0x08u8;
+                                config.both_for_shift = true;
+                            }
+                            _ => {}
                         }
+
+                        #[cfg(feature = "stm32f1")]
+                        config.write(&mut flash);
+
+                        key_left.replace_keycode(config.left_key);
+                        key_right.replace_keycode(config.right_key);
                     }
                 }
                 Err(e) => panic!("Error receiving USB data {:?}", e),
@@ -81,6 +107,7 @@ fn main() -> ! {
         match usb.send_report(
             key_left.current_keycode(),
             key_right.current_keycode(),
+            config.both_for_shift,
             force_update,
         ) {
             Ok(sent_data) => {

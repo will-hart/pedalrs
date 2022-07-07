@@ -16,7 +16,13 @@ nb = "^1.0.0"
 switch-hal = "^0.4.0"
 
 usb-device = "^0.2.8"
-usbd-hid = "^0.5.2"
+usbd-hid = "0.6.0"
+
+[dependencies.eeprom]
+optional = true
+git = "https://github.com/will-hart/eeprom"
+branch = "hal-0.9.0"
+default-features=false
 
 [dependencies.stm32f1xx-hal]
 optional = true
@@ -35,4 +41,4 @@ default-features=false
 [features]
 default = ["stm32f1"]
 stm32f0 = ["stm32f0xx-hal/stm32f042", "stm32f0xx-hal/rt", "stm32f0xx-hal/stm32-usbd"]
-stm32f1 = ["stm32f1xx-hal/stm32f103", "stm32f1xx-hal/rt", "stm32f1xx-hal/medium", "stm32f1xx-hal/stm32-usbd"]
+stm32f1 = ["stm32f1xx-hal/stm32f103", "stm32f1xx-hal/rt", "stm32f1xx-hal/medium", "stm32f1xx-hal/stm32-usbd", "eeprom/stm32f103"]

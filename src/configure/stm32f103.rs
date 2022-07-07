@@ -5,7 +5,9 @@ use stm32f1xx_hal as hal;
 
 use cortex_m::{asm::delay as cycle_delay, peripheral::NVIC};
 
+use eeprom::{EEPROMExt, Params};
 use hal::{
+    flash::{FlashSize, Parts, SectorSize},
     gpio::{ErasedPin, Input, PullUp},
     pac::{self, interrupt::TIM2 as IRQ_TIM2, TIM2},
     prelude::*,
@@ -15,8 +17,17 @@ use hal::{
 };
 use switch_hal::{ActiveLow, IntoSwitch, Switch};
 
+use super::EEPROM_PAGES;
+
 pub type PinType = ErasedPin<Input<PullUp>>;
 pub type TimerType = CounterHz<TIM2>;
+
+pub const EEPROM_PARAMS: Params = Params {
+    first_page: (FlashSize::Sz64K as u32) - EEPROM_PAGES,
+    flash_size: FlashSize::Sz64K,
+    page_size: SectorSize::Sz1K,
+    page_count: 1,
+};
 
 pub struct GpioConfiguration {
     pub btn_left: Switch<PinType, ActiveLow>,
@@ -24,6 +35,7 @@ pub struct GpioConfiguration {
     pub delay: SysDelay,
     pub peripheral: Peripheral,
     pub timer: TimerType,
+    pub flash: Parts,
 }
 
 pub fn configure_gpio() -> Option<GpioConfiguration> {
@@ -82,6 +94,12 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
     usb_dp.set_low();
     cycle_delay(100); // >1 us, I think
 
+    // configure EEPROM, but return Flash because eeprom borrows it
+    flash
+        .eeprom(EEPROM_PARAMS)
+        .init()
+        .expect("Failed to init EEPROM");
+
     return Some(GpioConfiguration {
         btn_left,
         btn_right,
@@ -92,5 +110,6 @@ pub fn configure_gpio() -> Option<GpioConfiguration> {
             pin_dp: usb_dp.into_floating_input(&mut gpioa.crh),
         },
         timer,
+        flash,
     });
 }
