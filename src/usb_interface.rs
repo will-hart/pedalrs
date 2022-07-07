@@ -20,6 +20,8 @@ pub struct UsbInterface<'a> {
     keyboard_report: CustomKeyboardReport,
 }
 
+pub const KEY_MOD_LSHIFT: u8 = 0x02u8;
+
 impl<'a> UsbInterface<'a> {
     /// Creates a new UsbInterface, configures it and returns it
     pub fn new(alloc: &'a UsbBusAllocator<UsbBus<Peripheral>>) -> UsbInterface<'a> {
@@ -71,7 +73,7 @@ impl<'a> UsbInterface<'a> {
         &mut self,
         key1: u8,
         key2: u8,
-        _both_for_shift: bool, // reserved for future feature
+        both_for_shift: bool,
         force_update: bool,
     ) -> Result<bool, usb_device::UsbError> {
         // if either key pressed value has changed, send a report
@@ -79,8 +81,17 @@ impl<'a> UsbInterface<'a> {
             || self.keyboard_report.keycodes[0] != key1
             || self.keyboard_report.keycodes[1] != key2
         {
-            self.keyboard_report.keycodes[0] = key1;
-            self.keyboard_report.keycodes[1] = key2;
+            // if both pedals are down, send shift instead
+            if key1 > 0 && key2 > 0 && both_for_shift {
+                self.keyboard_report.keycodes[0] = 0;
+                self.keyboard_report.keycodes[1] = 0;
+                self.keyboard_report.modifier = KEY_MOD_LSHIFT;
+            } else {
+                self.keyboard_report.keycodes[0] = key1;
+                self.keyboard_report.keycodes[1] = key2;
+                self.keyboard_report.modifier = 0;
+            }
+
             self.hid.push_input(&self.keyboard_report).ok();
 
             return Ok(true);
